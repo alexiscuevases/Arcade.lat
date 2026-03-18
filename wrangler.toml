@@ -1,0 +1,24 @@
+name = "arcade"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "arcade-db"
+database_id = "cbf4b18e-cce4-4551-90e3-cfe712618a57"
+
+[[durable_objects.bindings]]
+name = "QUEUE_MANAGER"
+class_name = "QueueManager"
+script_name = "arcade-queue-worker"
+
+[vars]
+STRIPE_PRICE_BASIC = "price_1TCSP8D4PsZljUybfUZtIKQU"
+STRIPE_PRICE_PRO = "price_1TCSPVD4PsZljUyb6Au2nqSH"
+APP_URL = "http://localhost:5173"
+
+# Secrets — set via: wrangler secret put <NAME>
+# JWT_SECRET
+# STRIPE_SECRET_KEY
+# STRIPE_WEBHOOK_SECRET
