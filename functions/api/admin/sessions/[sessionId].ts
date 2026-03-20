@@ -4,8 +4,7 @@ import { json, error } from "../../../lib/response"
 import { requireAdmin } from "../../../lib/auth"
 import { getSessionById, endSession, logUsage } from "../../../lib/db"
 import { destroyInstance } from "../../../../workers/vast-service"
-
-const DO_URL = "https://queue-manager.internal"
+import { getStub, doFetch } from "../../../lib/do"
 
 export const onRequestDelete: PagesFunction<Env> = async ({ request, env, params }) => {
   const auth = await requireAdmin(request, env.JWT_SECRET)
@@ -17,13 +16,8 @@ export const onRequestDelete: PagesFunction<Env> = async ({ request, env, params
   if (!session) return error("Session not found", 404)
 
   // Always release the DO slot — idempotent, fixes desync where D1 is ended but DO still shows active
-  const doId = env.QUEUE_MANAGER.idFromName("global")
-  const stub = env.QUEUE_MANAGER.get(doId)
-  await stub.fetch(`${DO_URL}/release`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId: session.user_id }),
-  })
+  const stub = getStub(env)
+  await doFetch(stub, "/release", { userId: session.user_id })
 
   if (!session.ended_at) {
     // End session in D1 and log it

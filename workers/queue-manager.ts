@@ -1,49 +1,20 @@
 // Durable Object — single-threaded priority queue + GPU session manager
 
-export interface InstanceInfo {
-  id: string
-  ip: string
-  port: number
-  token: string
-}
-
-export interface ActiveSession {
-  userId: string
-  gameId: string
-  instance: InstanceInfo
-  startedAt: number
-}
-
-export interface QueueEntry {
-  userId: string
-  gameId: string
-  plan: "FREE" | "BASIC" | "PRO"
-  joinedAt: number
-}
+import type {
+  InstanceInfo,
+  ActiveSession,
+  QueueEntry,
+  JoinResponse,
+  ConfirmResponse,
+  ReleaseResponse,
+  SessionStatus,
+  Plan,
+} from "../shared/types"
 
 // DO message types
-type JoinRequest = { userId: string; gameId: string; plan: "FREE" | "BASIC" | "PRO" }
+type JoinRequest = { userId: string; gameId: string; plan: Plan }
 type ConfirmRequest = { userId: string; gameId: string; instance: InstanceInfo }
 type ReleaseRequest = { userId: string }
-
-type JoinResponse =
-  | { type: "active"; session: ActiveSession }
-  | { type: "pending" }
-  | { type: "queued"; position: number }
-  | { type: "ready" } // GPU slot reserved — caller must create instance and POST /confirm
-
-type ConfirmResponse = { type: "active"; session: ActiveSession }
-
-type ReleaseResponse = {
-  freedInstanceId: string | null
-  nextEntry: QueueEntry | null
-}
-
-type StatusResponse =
-  | { type: "active"; session: ActiveSession }
-  | { type: "pending"; gameId: string }
-  | { type: "queued"; position: number; gameId: string }
-  | { type: "idle" }
 
 export class QueueManager {
   private state: DurableObjectState
@@ -188,7 +159,7 @@ export class QueueManager {
     }
   }
 
-  private async handleStatus(userId: string): Promise<StatusResponse> {
+  private async handleStatus(userId: string): Promise<SessionStatus> {
     if (this.activeSessions.has(userId)) {
       return { type: "active", session: this.activeSessions.get(userId)! }
     }

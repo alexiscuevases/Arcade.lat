@@ -1,25 +1,11 @@
 import type { PagesFunction } from "@cloudflare/workers-types"
 import type { Env } from "../../lib/env"
+import type { JoinResponse } from "../../../shared/types"
 import { json, error } from "../../lib/response"
 import { requireAuth } from "../../lib/auth"
 import { getUserById, createSession, logUsage, getDailyUsageSeconds, DAILY_LIMIT_SECONDS } from "../../lib/db"
 import { createInstance } from "../../../workers/vast-service"
-
-const DO_URL = "https://queue-manager.internal"
-
-function getStub(env: Env) {
-  const id = env.QUEUE_MANAGER.idFromName("global")
-  return env.QUEUE_MANAGER.get(id)
-}
-
-async function doFetch(stub: DurableObjectStub, path: string, body?: unknown) {
-  const res = await stub.fetch(`${DO_URL}${path}`, {
-    method: body ? "POST" : "GET",
-    headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  return res.json()
-}
+import { getStub, doFetch } from "../../lib/do"
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const auth = await requireAuth(request, env.JWT_SECRET)
@@ -51,11 +37,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     userId: user.id,
     gameId,
     plan: user.plan,
-  }) as
-    | { type: "active"; session: { instance: { ip: string; port: number; token: string } } }
-    | { type: "pending" }
-    | { type: "queued"; position: number }
-    | { type: "ready" }
+  }) as JoinResponse
 
   if (result.type === "active") {
     return json({

@@ -1,12 +1,9 @@
+import type { AuthUser } from "@shared/types"
+
+export type { AuthUser }
+
 const TOKEN_KEY = "arcade_token"
 const USER_KEY = "arcade_user"
-
-export interface AuthUser {
-  id: string
-  email: string
-  plan: "FREE" | "BASIC" | "PRO"
-  role: "ADMIN" | "USER"
-}
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)

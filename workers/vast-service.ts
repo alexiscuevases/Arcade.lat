@@ -1,14 +1,11 @@
 // Mock Vast.ai service — replace with real Vast.ai API calls in production
 
-export interface VastInstance {
-  id: string
-  ip: string
-  port: number
-  token: string
-}
+import type { InstanceInfo } from "../shared/types"
+
+export type { InstanceInfo }
 
 // In production: POST https://console.vast.ai/api/v0/asks/<id>/
-export async function createInstance(): Promise<VastInstance> {
+export async function createInstance(): Promise<InstanceInfo> {
   await new Promise((r) => setTimeout(r, 500)) // simulate network latency
 
   return {

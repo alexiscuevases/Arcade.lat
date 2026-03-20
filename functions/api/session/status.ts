@@ -1,17 +1,17 @@
 import type { PagesFunction } from "@cloudflare/workers-types"
 import type { Env } from "../../lib/env"
+import type { SessionStatus } from "../../../shared/types"
 import { json } from "../../lib/response"
 import { requireAuth } from "../../lib/auth"
 import { getActiveSession, getUserById, getDailyUsageSeconds, DAILY_LIMIT_SECONDS } from "../../lib/db"
-
-const DO_URL = "https://queue-manager.internal"
+import { getStub } from "../../lib/do"
+import { DO_URL } from "../../../shared/settings"
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const auth = await requireAuth(request, env.JWT_SECRET)
   if (auth instanceof Response) return auth
 
-  const id = env.QUEUE_MANAGER.idFromName("global")
-  const stub = env.QUEUE_MANAGER.get(id)
+  const stub = getStub(env)
 
   const [res, user] = await Promise.all([
     stub.fetch(`${DO_URL}/status?userId=${encodeURIComponent(auth.userId)}`),
@@ -22,11 +22,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     return json({ error: "Queue manager unavailable" }, 503)
   }
 
-  const status = await res.json() as
-    | { type: "active"; session: { gameId: string; instance: { ip: string; port: number; token: string }; startedAt: number } }
-    | { type: "pending"; gameId: string }
-    | { type: "queued"; position: number; gameId: string }
-    | { type: "idle" }
+  const status = await res.json() as SessionStatus
 
   // Compute daily usage for this user
   const plan = user?.plan ?? "FREE"

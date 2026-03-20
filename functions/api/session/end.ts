@@ -1,5 +1,6 @@
 import type { PagesFunction } from "@cloudflare/workers-types"
 import type { Env } from "../../lib/env"
+import type { ReleaseResponse } from "../../../shared/types"
 import { json, error } from "../../lib/response"
 import { requireAuth } from "../../lib/auth"
 import {
@@ -9,22 +10,7 @@ import {
   logUsage,
 } from "../../lib/db"
 import { createInstance, destroyInstance } from "../../../workers/vast-service"
-
-const DO_URL = "https://queue-manager.internal"
-
-function getStub(env: Env) {
-  const id = env.QUEUE_MANAGER.idFromName("global")
-  return env.QUEUE_MANAGER.get(id)
-}
-
-async function doFetch(stub: DurableObjectStub, path: string, body?: unknown) {
-  const res = await stub.fetch(`${DO_URL}${path}`, {
-    method: body ? "POST" : "GET",
-    headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  return res.json()
-}
+import { getStub, doFetch } from "../../lib/do"
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const auth = await requireAuth(request, env.JWT_SECRET)
@@ -36,10 +22,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const stub = getStub(env)
 
   // Release GPU in DO, get next queued user (if any)
-  const result = await doFetch(stub, "/release", { userId: auth.userId }) as {
-    freedInstanceId: string | null
-    nextEntry: { userId: string; gameId: string; plan: string } | null
-  }
+  const result = await doFetch(stub, "/release", { userId: auth.userId }) as ReleaseResponse
 
   // End session in D1
   await endSession(env.DB, activeSession.id)

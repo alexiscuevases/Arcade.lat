@@ -1,48 +1,17 @@
 // D1 query helpers — no ORM, plain SQL
 
-export interface GameRow {
-  id: string
-  title: string
-  genre: string
-  players: string
-  gradient: string
-  developer: string
-  description: string
-  enabled: number // 1 = enabled, 0 = disabled
-  created_at: string
-}
+import type {
+  GameRow,
+  User,
+  Subscription,
+  Session,
+  AdminUserRow,
+  AdminSessionRow,
+} from "../../shared/types"
+import { DAILY_LIMIT_SECONDS } from "../../shared/settings"
 
-export interface User {
-  id: string
-  email: string
-  password_hash: string
-  plan: "FREE" | "BASIC" | "PRO"
-  role: "ADMIN" | "USER"
-  stripe_customer_id: string | null
-  created_at: string
-}
-
-export interface Subscription {
-  id: string
-  user_id: string
-  stripe_subscription_id: string
-  plan: "BASIC" | "PRO"
-  status: string
-  current_period_end: number
-  created_at: string
-}
-
-export interface Session {
-  id: string
-  user_id: string
-  game_id: string | null
-  instance_id: string | null
-  instance_ip: string | null
-  instance_port: number | null
-  instance_token: string | null
-  started_at: string
-  ended_at: string | null
-}
+export type { GameRow, User, Subscription, Session, AdminUserRow, AdminSessionRow }
+export { DAILY_LIMIT_SECONDS }
 
 // --- Users ---
 
@@ -75,23 +44,6 @@ export function updateUserRole(db: D1Database, userId: string, role: string) {
 }
 
 // --- Admin queries ---
-
-export interface AdminUserRow {
-  id: string
-  email: string
-  plan: "FREE" | "BASIC" | "PRO"
-  role: "ADMIN" | "USER"
-  created_at: string
-}
-
-export interface AdminSessionRow {
-  id: string
-  user_id: string
-  user_email: string
-  instance_ip: string | null
-  instance_port: number | null
-  started_at: string
-}
 
 export async function getAllUsers(db: D1Database): Promise<AdminUserRow[]> {
   const result = await db
@@ -311,12 +263,6 @@ export function deleteGame(db: D1Database, id: string) {
 }
 
 // --- Daily Usage ---
-
-export const DAILY_LIMIT_SECONDS: Record<string, number | null> = {
-  FREE: 3600,      // 1 hour
-  BASIC: 36000,    // 10 hours
-  PRO: null,       // unlimited
-}
 
 /**
  * Returns the total seconds a user has played today (UTC day).

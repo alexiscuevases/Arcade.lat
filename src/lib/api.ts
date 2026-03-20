@@ -1,12 +1,21 @@
 import { getToken } from "./auth"
+import type {
+  GameRow,
+  AdminUserRow,
+  AdminSessionRow,
+  AdminStats,
+  PaidPlan,
+  SessionStartResponse,
+  SessionStatusResponse,
+} from "@shared/types"
 
 class ApiError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
+  status: number
+
+  constructor(status: number, message: string) {
     super(message)
     this.name = "ApiError"
+    this.status = status
   }
 }
 
@@ -49,28 +58,20 @@ export const api = {
 
   session: {
     start: (gameId: string) =>
-      request<
-        | { status: "active"; gameId: string; connection: { ip: string; port: number; token: string } }
-        | { status: "queued"; gameId: string; position: number }
-        | { status: "pending"; gameId: string }
-      >("/api/session/start", { method: "POST", body: JSON.stringify({ gameId }) }),
+      request<SessionStartResponse>("/api/session/start", {
+        method: "POST",
+        body: JSON.stringify({ gameId }),
+      }),
 
     end: () =>
       request<{ success: boolean }>("/api/session/end", { method: "POST" }),
 
     status: () =>
-      request<
-        { dailyUsedSeconds: number; dailyLimitSeconds: number | null } & (
-          | { status: "active"; gameId: string; connection: { ip: string; port: number; token: string }; startedAt: number }
-          | { status: "queued"; gameId: string; position: number }
-          | { status: "pending"; gameId: string }
-          | { status: "idle" }
-        )
-      >("/api/session/status"),
+      request<SessionStatusResponse>("/api/session/status"),
   },
 
   stripe: {
-    createCheckoutSession: (plan: "BASIC" | "PRO") =>
+    createCheckoutSession: (plan: PaidPlan) =>
       request<{ url: string }>("/api/stripe/create-checkout-session", {
         method: "POST",
         body: JSON.stringify({ plan }),
@@ -79,62 +80,18 @@ export const api = {
 
   games: {
     list: () =>
-      request<{
-        games: Array<{
-          id: string
-          title: string
-          genre: string
-          players: string
-          gradient: string
-          developer: string
-          description: string
-          enabled: number
-          created_at: string
-        }>
-      }>("/api/games"),
+      request<{ games: GameRow[] }>("/api/games"),
 
     get: (id: string) =>
-      request<{
-        game: {
-          id: string
-          title: string
-          genre: string
-          players: string
-          gradient: string
-          developer: string
-          description: string
-          enabled: number
-          created_at: string
-        }
-      }>(`/api/games?id=${encodeURIComponent(id)}`),
+      request<{ game: GameRow }>(`/api/games?id=${encodeURIComponent(id)}`),
   },
 
   admin: {
     stats: () =>
-      request<{
-        totalUsers: number
-        planBreakdown: { FREE: number; BASIC: number; PRO: number }
-        activeSessions: number
-        recentUsers: Array<{
-          id: string
-          email: string
-          plan: "FREE" | "BASIC" | "PRO"
-          role: "ADMIN" | "USER"
-          created_at: string
-        }>
-      }>("/api/admin/stats"),
+      request<AdminStats>("/api/admin/stats"),
 
     users: () =>
-      request<{
-        users: Array<{
-          id: string
-          email: string
-          plan: "FREE" | "BASIC" | "PRO"
-          role: "ADMIN" | "USER"
-          created_at: string
-        }>
-        total: number
-      }>("/api/admin/users"),
+      request<{ users: AdminUserRow[]; total: number }>("/api/admin/users"),
 
     updateUser: (id: string, patch: { plan?: string; role?: string }) =>
       request<{ success: boolean }>(`/api/admin/users/${id}`, {
@@ -143,34 +100,13 @@ export const api = {
       }),
 
     sessions: () =>
-      request<{
-        sessions: Array<{
-          id: string
-          user_id: string
-          user_email: string
-          instance_ip: string | null
-          instance_port: number | null
-          started_at: string
-        }>
-      }>("/api/admin/sessions"),
+      request<{ sessions: AdminSessionRow[] }>("/api/admin/sessions"),
 
     killSession: (id: string) =>
       request<{ success: boolean }>(`/api/admin/sessions/${id}`, { method: "DELETE" }),
 
     games: () =>
-      request<{
-        games: Array<{
-          id: string
-          title: string
-          genre: string
-          players: string
-          gradient: string
-          developer: string
-          description: string
-          enabled: number
-          created_at: string
-        }>
-      }>("/api/admin/games"),
+      request<{ games: GameRow[] }>("/api/admin/games"),
 
     updateGame: (id: string, patch: { enabled?: number; title?: string; genre?: string }) =>
       request<{ success: boolean }>(`/api/admin/games/${id}`, {

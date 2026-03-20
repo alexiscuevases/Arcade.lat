@@ -1,11 +1,7 @@
 import { SignJWT, jwtVerify } from "jose"
+import type { JWTPayload } from "../../shared/types"
 
-export interface JWTPayload {
-  userId: string
-  email: string
-  plan: "FREE" | "BASIC" | "PRO"
-  role: "ADMIN" | "USER"
-}
+export type { JWTPayload }
 
 function key(secret: string) {
   return new TextEncoder().encode(secret)
