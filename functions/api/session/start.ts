@@ -2,7 +2,7 @@ import type { PagesFunction } from "@cloudflare/workers-types"
 import type { Env } from "../../lib/env"
 import { json, error } from "../../lib/response"
 import { requireAuth } from "../../lib/auth"
-import { getUserById, createSession, logUsage } from "../../lib/db"
+import { getUserById, createSession, logUsage, getDailyUsageSeconds, DAILY_LIMIT_SECONDS } from "../../lib/db"
 import { createInstance } from "../../../workers/vast-service"
 
 const DO_URL = "https://queue-manager.internal"
@@ -31,6 +31,18 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const body = await request.json<{ gameId?: string }>().catch(() => ({}))
   const gameId = body.gameId ?? null
   if (!gameId) return error("gameId is required", 400)
+
+  // Enforce daily play limit
+  const limitSeconds = DAILY_LIMIT_SECONDS[user.plan]
+  if (limitSeconds !== null) {
+    const usedSeconds = await getDailyUsageSeconds(env.DB, user.id)
+    if (usedSeconds >= limitSeconds) {
+      return error(
+        `Has alcanzado el límite diario de tu plan (${Math.floor(limitSeconds / 3600)}h). Actualiza tu plan para seguir jugando.`,
+        403
+      )
+    }
+  }
 
   const stub = getStub(env)
 

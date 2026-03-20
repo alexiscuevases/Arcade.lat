@@ -60,10 +60,12 @@ export const api = {
 
     status: () =>
       request<
-        | { status: "active"; gameId: string; connection: { ip: string; port: number; token: string }; startedAt: number }
-        | { status: "queued"; gameId: string; position: number }
-        | { status: "pending"; gameId: string }
-        | { status: "idle" }
+        { dailyUsedSeconds: number; dailyLimitSeconds: number | null } & (
+          | { status: "active"; gameId: string; connection: { ip: string; port: number; token: string }; startedAt: number }
+          | { status: "queued"; gameId: string; position: number }
+          | { status: "pending"; gameId: string }
+          | { status: "idle" }
+        )
       >("/api/session/status"),
   },
 

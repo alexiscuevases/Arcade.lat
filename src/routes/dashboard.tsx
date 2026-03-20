@@ -1,18 +1,34 @@
 import { useQuery } from "@tanstack/react-query"
-import { Gamepad2, Clock, Wifi, WifiOff, Crown, Zap, ChevronRight, Sparkles } from "lucide-react"
+import { useNavigate } from "@tanstack/react-router"
+import { Gamepad2, Clock, Wifi, WifiOff, Crown, Zap, ChevronRight, Sparkles, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { GameCatalog } from "@/components/dashboard/game-catalog"
 import { api } from "@/lib/api"
 import { getUser } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 
+const POLL_INTERVAL = 5_000
+
 export function DashboardPage() {
   const user = getUser()
+  const navigate = useNavigate()
 
   const { data: status } = useQuery({
     queryKey: ["session-status"],
     queryFn: api.session.status,
+    refetchInterval: (query) => {
+      const s = query.state.data?.status
+      return s === "queued" || s === "pending" ? POLL_INTERVAL : false
+    },
     retry: false,
+  })
+
+  const sessionGameId = status && status.status !== "idle" ? status.gameId : null
+
+  const { data: sessionGameData } = useQuery({
+    queryKey: ["game", sessionGameId],
+    queryFn: () => api.games.get(sessionGameId!),
+    enabled: !!sessionGameId,
   })
 
   const sessionActive = status?.status === "active"
@@ -99,13 +115,7 @@ export function DashboardPage() {
                 ? <Wifi className="size-4" />
                 : <WifiOff className="size-4" />}
             />
-            <StatCard
-              label="Límite diario"
-              value={isPro ? "∞" : isBasic ? "10 h" : "1 h"}
-              sub={isPro ? "Sin restricciones" : isBasic ? "por día" : "por día"}
-              accent={isPro ? "yellow" : "cyan"}
-              icon={<Clock className="size-4" />}
-            />
+            <DailyLimitCard status={status} isPro={isPro} isBasic={isBasic} />
           </div>
         </div>
       </div>
@@ -114,18 +124,67 @@ export function DashboardPage() {
       <div className="mx-auto max-w-5xl px-6 py-10 space-y-10">
         {/* Active session banner */}
         {sessionActive && (
-          <div className="flex items-center gap-4 rounded-2xl border border-green-500/20 bg-green-500/6 px-5 py-4">
+          <button
+            className="w-full text-left flex items-center gap-4 rounded-2xl border border-green-500/20 bg-green-500/6 px-5 py-4 hover:bg-green-500/10 transition-colors cursor-pointer"
+            onClick={() => sessionGameId && navigate({ to: "/game/$gameId", params: { gameId: sessionGameId } })}
+          >
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-green-500/15 border border-green-500/20">
               <span className="size-2.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_10px_var(--color-green-400)]" />
             </div>
             <div className="flex-1">
               <p className="font-semibold text-green-400 text-sm">Sesión activa en curso</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Selecciona el mismo juego para retomar tu stream.
+                {sessionGameData?.game.title
+                  ? <>Jugando <span className="text-foreground font-medium">{sessionGameData.game.title}</span> — haz clic para retomar tu stream.</>
+                  : "Haz clic para retomar tu stream."}
               </p>
             </div>
             <ChevronRight className="size-4 text-green-400/50 shrink-0" />
-          </div>
+          </button>
+        )}
+
+        {/* Queue banner */}
+        {status?.status === "queued" && (
+          <button
+            className="w-full text-left flex items-center gap-4 rounded-2xl border border-yellow-500/20 bg-yellow-500/6 px-5 py-4 hover:bg-yellow-500/10 transition-colors cursor-pointer"
+            onClick={() => sessionGameId && navigate({ to: "/game/$gameId", params: { gameId: sessionGameId } })}
+          >
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-yellow-500/15 border border-yellow-500/20">
+              <Users className="size-4 text-yellow-400" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-yellow-400 text-sm">
+                En cola — posición #{(status as { position: number }).position}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {sessionGameData?.game.title
+                  ? <>Esperando GPU para <span className="text-foreground font-medium">{sessionGameData.game.title}</span>. Los usuarios PRO tienen prioridad.</>
+                  : "Esperando GPU disponible. Los usuarios PRO tienen prioridad."}
+              </p>
+            </div>
+            <ChevronRight className="size-4 text-yellow-400/50 shrink-0" />
+          </button>
+        )}
+
+        {/* Pending banner */}
+        {status?.status === "pending" && (
+          <button
+            className="w-full text-left flex items-center gap-4 rounded-2xl border border-primary/20 bg-primary/6 px-5 py-4 hover:bg-primary/10 transition-colors cursor-pointer"
+            onClick={() => sessionGameId && navigate({ to: "/game/$gameId", params: { gameId: sessionGameId } })}
+          >
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 border border-primary/20">
+              <span className="size-2.5 rounded-full bg-primary animate-pulse" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-primary text-sm">Aprovisionando GPU…</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {sessionGameData?.game.title
+                  ? <>Preparando instancia para <span className="text-foreground font-medium">{sessionGameData.game.title}</span>. Esto toma unos segundos.</>
+                  : "Tu instancia está siendo preparada. Esto toma unos segundos."}
+              </p>
+            </div>
+            <ChevronRight className="size-4 text-primary/50 shrink-0" />
+          </button>
         )}
 
         {/* Catalog section */}
@@ -149,6 +208,54 @@ export function DashboardPage() {
         </section>
       </div>
     </div>
+  )
+}
+
+function DailyLimitCard({
+  status,
+  isPro,
+  isBasic,
+}: {
+  status: { dailyUsedSeconds?: number; dailyLimitSeconds?: number | null } | undefined
+  isPro: boolean
+  isBasic: boolean
+}) {
+  if (isPro) {
+    return (
+      <StatCard
+        label="Límite diario"
+        value="∞"
+        sub="Sin restricciones"
+        accent="yellow"
+        icon={<Clock className="size-4" />}
+      />
+    )
+  }
+
+  const limitSeconds = status?.dailyLimitSeconds ?? (isBasic ? 36000 : 3600)
+  const usedSeconds = status?.dailyUsedSeconds ?? 0
+  const remainingSeconds = Math.max(0, limitSeconds - usedSeconds)
+  const remainingHours = Math.floor(remainingSeconds / 3600)
+  const remainingMins = Math.floor((remainingSeconds % 3600) / 60)
+
+  const value =
+    remainingSeconds === 0
+      ? "0 min"
+      : remainingHours > 0
+        ? `${remainingHours}h ${remainingMins}m`
+        : `${remainingMins} min`
+
+  const pct = Math.min(100, (usedSeconds / limitSeconds) * 100)
+  const accent: Accent = pct >= 100 ? "neutral" : isBasic ? "cyan" : "cyan"
+
+  return (
+    <StatCard
+      label="Límite diario"
+      value={value}
+      sub={pct >= 100 ? "Límite alcanzado" : `${Math.round(pct)}% usado · ${isBasic ? "10h" : "1h"} total`}
+      accent={accent}
+      icon={<Clock className="size-4" />}
+    />
   )
 }
 

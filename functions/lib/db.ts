@@ -310,6 +310,33 @@ export function deleteGame(db: D1Database, id: string) {
   return db.prepare("DELETE FROM games WHERE id = ?").bind(id).run()
 }
 
+// --- Daily Usage ---
+
+export const DAILY_LIMIT_SECONDS: Record<string, number | null> = {
+  FREE: 3600,      // 1 hour
+  BASIC: 36000,    // 10 hours
+  PRO: null,       // unlimited
+}
+
+/**
+ * Returns the total seconds a user has played today (UTC day).
+ * Ongoing sessions (ended_at IS NULL) count up to now.
+ */
+export async function getDailyUsageSeconds(db: D1Database, userId: string): Promise<number> {
+  const result = await db
+    .prepare(
+      `SELECT COALESCE(SUM(
+         CAST((JULIANDAY(COALESCE(ended_at, datetime('now'))) - JULIANDAY(started_at)) * 86400 AS INTEGER)
+       ), 0) AS used_seconds
+       FROM sessions
+       WHERE user_id = ?
+         AND date(started_at) = date('now')`
+    )
+    .bind(userId)
+    .first<{ used_seconds: number }>()
+  return result?.used_seconds ?? 0
+}
+
 // --- Usage Logs ---
 
 export function logUsage(

@@ -47,7 +47,7 @@ type StatusResponse =
 
 export class QueueManager {
   private state: DurableObjectState
-  private totalGPUs = 10
+  private totalGPUs = 1
   private activeSessions = new Map<string, ActiveSession>() // userId -> session
   private pendingSlots = new Map<string, string>() // userId -> gameId, reserved-but-not-confirmed slots
   private queue: QueueEntry[] = []
