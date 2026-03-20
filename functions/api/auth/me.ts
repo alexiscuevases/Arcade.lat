@@ -11,5 +11,5 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const user = await getUserById(env.DB, auth.userId)
   if (!user) return json({ error: "User not found" }, 404)
 
-  return json({ id: user.id, email: user.email, plan: user.plan })
+  return json({ id: user.id, email: user.email, plan: user.plan, role: user.role ?? "USER" })
 }

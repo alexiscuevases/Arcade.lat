@@ -38,7 +38,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   // Release GPU in DO, get next queued user (if any)
   const result = await doFetch(stub, "/release", { userId: auth.userId }) as {
     freedInstanceId: string | null
-    nextEntry: { userId: string; plan: string } | null
+    nextEntry: { userId: string; gameId: string; plan: string } | null
   }
 
   // End session in D1
@@ -52,16 +52,17 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   // Assign next queued user if any
   if (result.nextEntry) {
-    const { userId: nextUserId } = result.nextEntry
+    const { userId: nextUserId, gameId: nextGameId } = result.nextEntry
     try {
       const instance = await createInstance()
 
-      await doFetch(stub, "/confirm", { userId: nextUserId, instance })
+      await doFetch(stub, "/confirm", { userId: nextUserId, gameId: nextGameId, instance })
 
       const sessionId = crypto.randomUUID()
       await createSession(env.DB, {
         id: sessionId,
         user_id: nextUserId,
+        game_id: nextGameId,
         instance_id: instance.id,
         instance_ip: instance.ip,
         instance_port: instance.port,

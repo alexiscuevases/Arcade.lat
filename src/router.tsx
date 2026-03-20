@@ -6,12 +6,17 @@ import {
   Outlet,
 } from "@tanstack/react-router"
 import { Toaster } from "sonner"
-import { isAuthenticated } from "./lib/auth"
+import { isAuthenticated, getUser } from "./lib/auth"
 import { Navbar } from "./components/layout/navbar"
 import { LoginPage } from "./routes/login"
 import { RegisterPage } from "./routes/register"
 import { PricingPage } from "./routes/pricing"
+import { LandingPage } from "./routes/landing"
 import { DashboardPage } from "./routes/dashboard"
+import { AccountPage } from "./routes/account"
+import { BillingPage } from "./routes/billing"
+import { GamePage } from "./routes/game"
+import { AdminPage } from "./routes/admin"
 
 // Root layout
 function RootLayout() {
@@ -31,8 +36,9 @@ const rootRoute = createRootRoute({ component: RootLayout })
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
+  component: LandingPage,
   beforeLoad: () => {
-    throw redirect({ to: isAuthenticated() ? "/dashboard" : "/login" })
+    if (isAuthenticated()) throw redirect({ to: "/dashboard" })
   },
 })
 
@@ -41,7 +47,7 @@ const loginRoute = createRoute({
   path: "/login",
   component: LoginPage,
   beforeLoad: () => {
-    if (isAuthenticated()) throw redirect({ to: "/dashboard" })
+    if (isAuthenticated()) throw redirect({ to: "/" })
   },
 })
 
@@ -50,7 +56,7 @@ const registerRoute = createRoute({
   path: "/register",
   component: RegisterPage,
   beforeLoad: () => {
-    if (isAuthenticated()) throw redirect({ to: "/dashboard" })
+    if (isAuthenticated()) throw redirect({ to: "/" })
   },
 })
 
@@ -69,12 +75,56 @@ const dashboardRoute = createRoute({
   },
 })
 
+const accountRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/account",
+  component: AccountPage,
+  beforeLoad: () => {
+    if (!isAuthenticated()) throw redirect({ to: "/login" })
+  },
+})
+
+const billingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/billing",
+  component: BillingPage,
+  beforeLoad: () => {
+    if (!isAuthenticated()) throw redirect({ to: "/login" })
+  },
+})
+
+const gameRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/game/$gameId",
+  component: function GameRouteComponent() {
+    const { gameId } = gameRoute.useParams()
+    return <GamePage gameId={gameId} />
+  },
+  beforeLoad: () => {
+    if (!isAuthenticated()) throw redirect({ to: "/login" })
+  },
+})
+
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin",
+  component: AdminPage,
+  beforeLoad: () => {
+    if (!isAuthenticated()) throw redirect({ to: "/login" })
+    if (getUser()?.role !== "ADMIN") throw redirect({ to: "/dashboard" })
+  },
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   registerRoute,
   pricingRoute,
   dashboardRoute,
+  accountRoute,
+  billingRoute,
+  gameRoute,
+  adminRoute,
 ])
 
 export const router = createRouter({ routeTree })

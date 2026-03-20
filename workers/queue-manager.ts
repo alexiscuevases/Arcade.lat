@@ -9,19 +9,21 @@ export interface InstanceInfo {
 
 export interface ActiveSession {
   userId: string
+  gameId: string
   instance: InstanceInfo
   startedAt: number
 }
 
 export interface QueueEntry {
   userId: string
+  gameId: string
   plan: "FREE" | "BASIC" | "PRO"
   joinedAt: number
 }
 
 // DO message types
-type JoinRequest = { userId: string; plan: "FREE" | "BASIC" | "PRO" }
-type ConfirmRequest = { userId: string; instance: InstanceInfo }
+type JoinRequest = { userId: string; gameId: string; plan: "FREE" | "BASIC" | "PRO" }
+type ConfirmRequest = { userId: string; gameId: string; instance: InstanceInfo }
 type ReleaseRequest = { userId: string }
 
 type JoinResponse =
@@ -39,15 +41,15 @@ type ReleaseResponse = {
 
 type StatusResponse =
   | { type: "active"; session: ActiveSession }
-  | { type: "pending" }
-  | { type: "queued"; position: number }
+  | { type: "pending"; gameId: string }
+  | { type: "queued"; position: number; gameId: string }
   | { type: "idle" }
 
 export class QueueManager {
   private state: DurableObjectState
   private totalGPUs = 10
   private activeSessions = new Map<string, ActiveSession>() // userId -> session
-  private pendingSlots = new Set<string>() // userIds with reserved-but-not-confirmed slots
+  private pendingSlots = new Map<string, string>() // userId -> gameId, reserved-but-not-confirmed slots
   private queue: QueueEntry[] = []
   private initialized = false
 
@@ -60,13 +62,13 @@ export class QueueManager {
   private async load() {
     const stored = await this.state.storage.get<{
       activeSessions: [string, ActiveSession][]
-      pendingSlots: string[]
+      pendingSlots: [string, string][]
       queue: QueueEntry[]
     }>("state")
 
     if (stored) {
       this.activeSessions = new Map(stored.activeSessions)
-      this.pendingSlots = new Set(stored.pendingSlots)
+      this.pendingSlots = new Map(stored.pendingSlots)
       this.queue = stored.queue
     }
     this.initialized = true
@@ -75,7 +77,7 @@ export class QueueManager {
   private async save() {
     await this.state.storage.put("state", {
       activeSessions: [...this.activeSessions.entries()],
-      pendingSlots: [...this.pendingSlots],
+      pendingSlots: [...this.pendingSlots.entries()],
       queue: this.queue,
     })
   }
@@ -118,7 +120,7 @@ export class QueueManager {
   }
 
   private async handleJoin(body: JoinRequest): Promise<JoinResponse> {
-    const { userId, plan } = body
+    const { userId, gameId, plan } = body
 
     // Already has an active session
     if (this.activeSessions.has(userId)) {
@@ -137,24 +139,24 @@ export class QueueManager {
 
     // GPU slot available — reserve it
     if (this.availableSlots() > 0) {
-      this.pendingSlots.add(userId)
+      this.pendingSlots.set(userId, gameId)
       await this.save()
       return { type: "ready" }
     }
 
     // Enqueue
-    this.queue.push({ userId, plan, joinedAt: Date.now() })
+    this.queue.push({ userId, gameId, plan, joinedAt: Date.now() })
     this.sortQueue()
     await this.save()
     return { type: "queued", position: this.queuePosition(userId) }
   }
 
   private async handleConfirm(body: ConfirmRequest): Promise<ConfirmResponse> {
-    const { userId, instance } = body
+    const { userId, gameId, instance } = body
 
     this.pendingSlots.delete(userId)
 
-    const session: ActiveSession = { userId, instance, startedAt: Date.now() }
+    const session: ActiveSession = { userId, gameId, instance, startedAt: Date.now() }
     this.activeSessions.set(userId, session)
     await this.save()
 
@@ -175,7 +177,7 @@ export class QueueManager {
     let nextEntry: QueueEntry | null = null
     if (this.queue.length > 0 && this.availableSlots() > 0) {
       nextEntry = this.queue.shift()!
-      this.pendingSlots.add(nextEntry.userId)
+      this.pendingSlots.set(nextEntry.userId, nextEntry.gameId)
     }
 
     await this.save()
@@ -191,11 +193,11 @@ export class QueueManager {
       return { type: "active", session: this.activeSessions.get(userId)! }
     }
     if (this.pendingSlots.has(userId)) {
-      return { type: "pending" }
+      return { type: "pending", gameId: this.pendingSlots.get(userId)! }
     }
-    const inQueue = this.queue.some((e) => e.userId === userId)
-    if (inQueue) {
-      return { type: "queued", position: this.queuePosition(userId) }
+    const entry = this.queue.find((e) => e.userId === userId)
+    if (entry) {
+      return { type: "queued", position: this.queuePosition(userId), gameId: entry.gameId }
     }
     return { type: "idle" }
   }

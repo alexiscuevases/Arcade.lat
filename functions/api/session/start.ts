@@ -28,11 +28,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const user = await getUserById(env.DB, auth.userId)
   if (!user) return error("User not found", 404)
 
+  const body = await request.json<{ gameId?: string }>().catch(() => ({}))
+  const gameId = body.gameId ?? null
+  if (!gameId) return error("gameId is required", 400)
+
   const stub = getStub(env)
 
   // Ask DO to join (checks active/pending/queue/available)
   const result = await doFetch(stub, "/join", {
     userId: user.id,
+    gameId,
     plan: user.plan,
   }) as
     | { type: "active"; session: { instance: { ip: string; port: number; token: string } } }
@@ -59,12 +64,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   try {
     const instance = await createInstance()
 
-    await doFetch(stub, "/confirm", { userId: user.id, instance })
+    await doFetch(stub, "/confirm", { userId: user.id, gameId, instance })
 
     const sessionId = crypto.randomUUID()
     await createSession(env.DB, {
       id: sessionId,
       user_id: user.id,
+      game_id: gameId,
       instance_id: instance.id,
       instance_ip: instance.ip,
       instance_port: instance.port,

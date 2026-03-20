@@ -38,9 +38,10 @@ export function RegisterPage() {
           id: res.user.id,
           email: res.user.email,
           plan: res.user.plan as "FREE" | "BASIC" | "PRO",
+          role: res.user.role as "ADMIN" | "USER",
         })
         toast.success("Account created!")
-        navigate({ to: "/dashboard" })
+        navigate({ to: "/" })
       } catch (err: unknown) {
         toast.error(err instanceof Error ? err.message : "Registration failed")
       }
@@ -49,88 +50,98 @@ export function RegisterPage() {
 
   return (
     <div className="flex min-h-[calc(100svh-3.5rem)] items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Gamepad2 className="size-5" />
+      <div className="w-full max-w-sm space-y-6">
+        {/* Logo */}
+        <div className="text-center space-y-2">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/30 shadow-[0_0_24px_oklch(0.76_0.19_196/20%)]">
+            <Gamepad2 className="size-6 text-primary" />
           </div>
-          <CardTitle>Create account</CardTitle>
-          <CardDescription>Start playing cloud games instantly</CardDescription>
-        </CardHeader>
+          <p className="text-xs tracking-[0.3em] text-muted-foreground uppercase">Cloud Gaming</p>
+        </div>
 
-        <CardContent>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              form.handleSubmit()
-            }}
-            className="space-y-4"
-          >
-            <form.Field name="email">
-              {(field) => (
-                <div className="space-y-1.5">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
-                </div>
-              )}
-            </form.Field>
+        <Card className="border-white/8 bg-card/80 backdrop-blur-sm shadow-[0_0_40px_oklch(0.76_0.19_196/8%)]">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-xl font-bold">Create account</CardTitle>
+            <CardDescription>Start playing cloud games instantly</CardDescription>
+          </CardHeader>
 
-            <form.Field name="password">
-              {(field) => (
-                <div className="space-y-1.5">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Min. 8 characters"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
-                </div>
-              )}
-            </form.Field>
+          <CardContent>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                form.handleSubmit()
+              }}
+              className="space-y-4"
+            >
+              <form.Field name="email">
+                {(field) => (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      className="border-white/8 bg-white/4 focus:border-primary/50 focus:bg-white/6 transition-colors"
+                    />
+                  </div>
+                )}
+              </form.Field>
 
-            <form.Field name="confirmPassword">
-              {(field) => (
-                <div className="space-y-1.5">
-                  <Label htmlFor="confirmPassword">Confirm password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
-                </div>
-              )}
-            </form.Field>
+              <form.Field name="password">
+                {(field) => (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="password" className="text-xs uppercase tracking-wider text-muted-foreground">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Min. 8 characters"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      className="border-white/8 bg-white/4 focus:border-primary/50 focus:bg-white/6 transition-colors"
+                    />
+                  </div>
+                )}
+              </form.Field>
 
-            <form.Subscribe selector={(s) => s.isSubmitting}>
-              {(submitting) => (
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? "Creating account…" : "Create account"}
-                </Button>
-              )}
-            </form.Subscribe>
-          </form>
+              <form.Field name="confirmPassword">
+                {(field) => (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="confirmPassword" className="text-xs uppercase tracking-wider text-muted-foreground">Confirm password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      className="border-white/8 bg-white/4 focus:border-primary/50 focus:bg-white/6 transition-colors"
+                    />
+                  </div>
+                )}
+              </form.Field>
 
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link to="/login" className="text-foreground underline underline-offset-4">
-              Sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+              <form.Subscribe selector={(s) => s.isSubmitting}>
+                {(submitting) => (
+                  <Button type="submit" className="w-full mt-2" size="lg" disabled={submitting}>
+                    {submitting ? "Creating account…" : "Create account"}
+                  </Button>
+                )}
+              </form.Subscribe>
+            </form>
+
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
+                Sign in
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

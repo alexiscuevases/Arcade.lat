@@ -2,6 +2,7 @@ import type { PagesFunction } from "@cloudflare/workers-types"
 import type { Env } from "../../lib/env"
 import { json } from "../../lib/response"
 import { requireAuth } from "../../lib/auth"
+import { getActiveSession } from "../../lib/db"
 
 const DO_URL = "https://queue-manager.internal"
 
@@ -21,22 +22,38 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   const status = await res.json() as
-    | { type: "active"; session: { instance: { ip: string; port: number; token: string }; startedAt: number } }
-    | { type: "pending" }
-    | { type: "queued"; position: number }
+    | { type: "active"; session: { gameId: string; instance: { ip: string; port: number; token: string }; startedAt: number } }
+    | { type: "pending"; gameId: string }
+    | { type: "queued"; position: number; gameId: string }
     | { type: "idle" }
 
   if (status.type === "active") {
+    // Cross-check with D1 — DO may be out of sync if session was ended outside normal flow
+    const dbSession = await getActiveSession(env.DB, auth.userId)
+    if (!dbSession) {
+      // DO thinks it's active but D1 disagrees — release the DO slot silently
+      await stub.fetch(`${DO_URL}/release`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: auth.userId }),
+      }).catch(() => {})
+      return json({ status: "idle" })
+    }
     return json({
       status: "active",
+      gameId: status.session.gameId,
       connection: status.session.instance,
       startedAt: status.session.startedAt,
     })
   }
 
   if (status.type === "queued") {
-    return json({ status: "queued", position: status.position })
+    return json({ status: "queued", position: status.position, gameId: status.gameId })
   }
 
-  return json({ status: status.type }) // "pending" | "idle"
+  if (status.type === "pending") {
+    return json({ status: "pending", gameId: status.gameId })
+  }
+
+  return json({ status: "idle" })
 }

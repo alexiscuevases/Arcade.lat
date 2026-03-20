@@ -28,3 +28,13 @@ export async function requireAuth(
   if (!auth) return error("Unauthorized", 401)
   return auth
 }
+
+export async function requireAdmin(
+  request: Request,
+  secret: string
+): Promise<JWTPayload | Response> {
+  const auth = await getAuth(request, secret)
+  if (!auth) return error("Unauthorized", 401)
+  if (auth.role !== "ADMIN") return error("Forbidden", 403)
+  return auth
+}

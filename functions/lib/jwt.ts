@@ -4,6 +4,7 @@ export interface JWTPayload {
   userId: string
   email: string
   plan: "FREE" | "BASIC" | "PRO"
+  role: "ADMIN" | "USER"
 }
 
 function key(secret: string) {

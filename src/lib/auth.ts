@@ -5,6 +5,7 @@ export interface AuthUser {
   id: string
   email: string
   plan: "FREE" | "BASIC" | "PRO"
+  role: "ADMIN" | "USER"
 }
 
 export function getToken(): string | null {

@@ -24,9 +24,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   await createUser(env.DB, { id, email: body.email, password_hash, plan: "FREE" })
 
   const token = await signToken(
-    { userId: id, email: body.email, plan: "FREE" },
+    { userId: id, email: body.email, plan: "FREE", role: "USER" },
     env.JWT_SECRET
   )
 
-  return json({ token, user: { id, email: body.email, plan: "FREE" } }, 201)
+  return json({ token, user: { id, email: body.email, plan: "FREE", role: "USER" } }, 201)
 }

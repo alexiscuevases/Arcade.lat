@@ -18,10 +18,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const valid = await verifyPassword(body.password, user.password_hash)
   if (!valid) return error("Invalid credentials", 401)
 
+  const role = user.role ?? "USER"
+
   const token = await signToken(
-    { userId: user.id, email: user.email, plan: user.plan },
+    { userId: user.id, email: user.email, plan: user.plan, role },
     env.JWT_SECRET
   )
 
-  return json({ token, user: { id: user.id, email: user.email, plan: user.plan } })
+  return json({ token, user: { id: user.id, email: user.email, plan: user.plan, role } })
 }
