@@ -3,7 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router"
 import {
   Gamepad2, LogOut, Settings, CreditCard, LayoutDashboard,
   Zap, Crown, Menu, X, ChevronDown, Layers, DollarSign,
-  BookOpen, HelpCircle,
+  BookOpen, HelpCircle, History, Users, Bell, Headphones,
 } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
@@ -44,11 +44,18 @@ function useScrollProgress() {
 
 // ─── Nav links ───────────────────────────────────────────────────────────────
 
-const navLinks = [
+const publicLinks = [
   { label: "Características", to: "/features", icon: Layers },
   { label: "Precios", to: "/pricing", icon: DollarSign },
   { label: "Blog", to: "/blog", icon: BookOpen },
   { label: "FAQ", to: "/faq", icon: HelpCircle },
+]
+
+const appLinks = [
+  { label: "Dashboard", to: "/dashboard", icon: Gamepad2 },
+  { label: "Actividad", to: "/dashboard/activity", icon: History },
+  { label: "Referidos", to: "/dashboard/referral", icon: Users },
+  { label: "Soporte", to: "/dashboard/support", icon: Headphones },
 ]
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -62,6 +69,8 @@ export function Navbar() {
   const { progress, scrolled } = useScrollProgress()
   const [mobileOpen, setMobileOpen] = useState(false)
 
+  const navLinks = authed ? appLinks : publicLinks
+
   // Close mobile menu on route change
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
@@ -69,6 +78,11 @@ export function Navbar() {
     clearAuth()
     queryClient.clear()
     router.navigate({ to: "/login" })
+  }
+
+  function isActive(to: string) {
+    if (to === "/dashboard") return pathname === "/dashboard"
+    return pathname === to || pathname.startsWith(to + "/")
   }
 
   return (
@@ -125,46 +139,51 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* ─── Desktop nav ─── */}
-          {!authed && (
-            <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
-              {navLinks.map(({ label, to }) => {
-                const active = pathname === to || (to !== "/" && pathname.startsWith(to))
-                return (
-                  <Link
-                    key={to}
-                    to={to}
-                    className={`relative px-3.5 py-1.5 rounded-md text-sm transition-all duration-200 font-medium group ${
-                      active
-                        ? "text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-white/4"
-                    }`}
-                  >
-                    {active && (
-                      <span
-                        className="absolute inset-0 rounded-md pointer-events-none"
-                        style={{ background: "oklch(0.76 0.19 196 / 8%)", border: "1px solid oklch(0.76 0.19 196 / 20%)" }}
-                      />
-                    )}
-                    <span className="relative">{label}</span>
-                    {active && (
-                      <span
-                        className="absolute bottom-0 left-1/2 -translate-x-1/2 h-px w-4/5 pointer-events-none"
-                        style={{ background: "linear-gradient(90deg, transparent, oklch(0.76 0.19 196 / 70%), transparent)" }}
-                      />
-                    )}
-                  </Link>
-                )
-              })}
-            </nav>
-          )}
-
-          {authed && <div className="flex-1" />}
+          {/* ─── Desktop nav (center) ─── */}
+          <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
+            {navLinks.map(({ label, to }) => {
+              const active = isActive(to)
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`relative px-3.5 py-1.5 rounded-md text-sm transition-all duration-200 font-medium group ${
+                    active
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/4"
+                  }`}
+                >
+                  {active && (
+                    <span
+                      className="absolute inset-0 rounded-md pointer-events-none"
+                      style={{ background: "oklch(0.76 0.19 196 / 8%)", border: "1px solid oklch(0.76 0.19 196 / 20%)" }}
+                    />
+                  )}
+                  <span className="relative">{label}</span>
+                  {active && (
+                    <span
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 h-px w-4/5 pointer-events-none"
+                      style={{ background: "linear-gradient(90deg, transparent, oklch(0.76 0.19 196 / 70%), transparent)" }}
+                    />
+                  )}
+                </Link>
+              )
+            })}
+          </nav>
 
           {/* ─── Right side ─── */}
           <div className="flex items-center gap-2 shrink-0">
             {authed && user ? (
               <>
+                {/* Notifications bell */}
+                <Link
+                  to="/dashboard/notifications"
+                  className="relative flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                >
+                  <Bell className="size-4" />
+                  <span className="absolute top-1 right-1 size-2 rounded-full bg-primary border border-background" />
+                </Link>
+
                 {/* Plan badge */}
                 {user.plan === "PRO" ? (
                   <Badge className="gap-1 bg-yellow-500/10 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/20 hidden sm:inline-flex">
@@ -180,7 +199,7 @@ export function Navbar() {
                   </Badge>
                 )}
 
-                {/* User dropdown */}
+                {/* User dropdown — only account/profile actions */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-1.5 rounded-lg px-2 py-1 hover:bg-white/5 transition-colors group">
@@ -201,20 +220,6 @@ export function Navbar() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator className="bg-white/6" />
                     <DropdownMenuItem asChild>
-                      <Link to="/dashboard" className="flex items-center gap-2">
-                        <Gamepad2 className="size-4" />
-                        Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                    {user.role === "ADMIN" && (
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin" className="flex items-center gap-2">
-                          <LayoutDashboard className="size-4" />
-                          Administración
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem asChild>
                       <Link to="/account" className="flex items-center gap-2">
                         <Settings className="size-4" />
                         Cuenta
@@ -226,6 +231,17 @@ export function Navbar() {
                         Facturación
                       </Link>
                     </DropdownMenuItem>
+                    {user.role === "ADMIN" && (
+                      <>
+                        <DropdownMenuSeparator className="bg-white/6" />
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="flex items-center gap-2">
+                            <LayoutDashboard className="size-4" />
+                            Administración
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator className="bg-white/6" />
                     <DropdownMenuItem
                       onClick={logout}
@@ -236,6 +252,15 @@ export function Navbar() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Mobile hamburger (authed) */}
+                <button
+                  onClick={() => setMobileOpen((v) => !v)}
+                  className="md:hidden flex size-8 items-center justify-center rounded-md border border-white/8 text-muted-foreground hover:text-foreground hover:border-white/20 transition-colors"
+                  aria-label="Toggle menu"
+                >
+                  {mobileOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+                </button>
               </>
             ) : (
               <>
@@ -260,7 +285,7 @@ export function Navbar() {
                   </Link>
                 </div>
 
-                {/* Mobile hamburger */}
+                {/* Mobile hamburger (public) */}
                 <button
                   onClick={() => setMobileOpen((v) => !v)}
                   className="sm:hidden flex size-8 items-center justify-center rounded-md border border-white/8 text-muted-foreground hover:text-foreground hover:border-white/20 transition-colors"
@@ -275,15 +300,15 @@ export function Navbar() {
 
         {/* ─── Mobile menu ─── */}
         <div
-          className="sm:hidden overflow-hidden transition-all duration-300 border-t"
+          className={`${authed ? "md:hidden" : "sm:hidden"} overflow-hidden transition-all duration-300 border-t`}
           style={{
-            maxHeight: mobileOpen ? "400px" : "0px",
+            maxHeight: mobileOpen ? "500px" : "0px",
             borderColor: mobileOpen ? "oklch(1 0 0 / 6%)" : "transparent",
           }}
         >
           <div className="px-4 py-4 space-y-1">
             {navLinks.map(({ label, to, icon: Icon }) => {
-              const active = pathname === to || (to !== "/" && pathname.startsWith(to))
+              const active = isActive(to)
               return (
                 <Link
                   key={to}
@@ -299,18 +324,35 @@ export function Navbar() {
                 </Link>
               )
             })}
-            <div className="pt-3 border-t border-white/6 flex flex-col gap-2">
-              <Link to="/login" className="w-full">
-                <Button variant="ghost" size="sm" className="w-full justify-center text-sm h-9">
-                  Iniciar sesión
-                </Button>
-              </Link>
-              <Link to="/register" className="w-full">
-                <Button size="sm" className="w-full justify-center text-sm h-9 glow-cyan">
-                  Empezar gratis
-                </Button>
-              </Link>
-            </div>
+
+            {authed ? (
+              <div className="pt-3 border-t border-white/6 space-y-1">
+                <Link
+                  to="/dashboard/notifications"
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    isActive("/dashboard/notifications")
+                      ? "bg-primary/10 text-primary border border-primary/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/4"
+                  }`}
+                >
+                  <Bell className="size-4 shrink-0" />
+                  Notificaciones
+                </Link>
+              </div>
+            ) : (
+              <div className="pt-3 border-t border-white/6 flex flex-col gap-2">
+                <Link to="/login" className="w-full">
+                  <Button variant="ghost" size="sm" className="w-full justify-center text-sm h-9">
+                    Iniciar sesión
+                  </Button>
+                </Link>
+                <Link to="/register" className="w-full">
+                  <Button size="sm" className="w-full justify-center text-sm h-9 glow-cyan">
+                    Empezar gratis
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </header>

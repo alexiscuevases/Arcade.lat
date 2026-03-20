@@ -14,6 +14,10 @@ import { RegisterPage } from "./features/auth/register"
 import { PricingPage } from "./features/marketing/pricing"
 import { LandingPage } from "./features/marketing/landing"
 import { DashboardPage } from "./features/dashboard/dashboard"
+import { SupportPage } from "./features/dashboard/support"
+import { ActivityPage } from "./features/dashboard/activity"
+import { ReferralPage } from "./features/dashboard/referral"
+import { NotificationsPage } from "./features/dashboard/notifications"
 import { AccountPage } from "./features/account/account"
 import { BillingPage } from "./features/account/billing"
 import { GamePage } from "./features/game/game"
@@ -22,7 +26,7 @@ import { TermsPage } from "./features/legal/terms"
 import { PrivacyPage } from "./features/legal/privacy"
 import { AboutPage } from "./features/marketing/about"
 import { FaqPage } from "./features/marketing/faq"
-import { SupportPage } from "./features/marketing/support"
+import { SupportPage as PublicSupportPage } from "./features/marketing/support"
 import { BlogPage } from "./features/marketing/blog"
 import { NotFoundPage } from "./features/not-found"
 import { CookiesPage } from "./features/legal/cookies"
@@ -30,6 +34,7 @@ import { RefundPage } from "./features/legal/refund"
 import { DisclaimersPage } from "./features/legal/disclaimers"
 import { FeaturesPage } from "./features/marketing/features"
 import { BlogPostPage } from "./features/marketing/blog-post"
+import { ChatWidget } from "./shared/components/chat-widget"
 
 // Root shell (shared by all routes — only holds Toaster)
 function RootLayout() {
@@ -62,6 +67,7 @@ function AppLayout() {
       <main className="flex-1">
         <Outlet />
       </main>
+      <ChatWidget />
     </div>
   )
 }
@@ -117,7 +123,7 @@ const faqRoute = createRoute({
 const supportRoute = createRoute({
   getParentRoute: () => publicLayoutRoute,
   path: "/support",
-  component: SupportPage,
+  component: PublicSupportPage,
 })
 
 const blogRoute = createRoute({
@@ -199,6 +205,42 @@ const dashboardRoute = createRoute({
   },
 })
 
+const dashboardSupportRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: "/dashboard/support",
+  component: SupportPage,
+  beforeLoad: () => {
+    if (!isAuthenticated()) throw redirect({ to: "/login" })
+  },
+})
+
+const dashboardActivityRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: "/dashboard/activity",
+  component: ActivityPage,
+  beforeLoad: () => {
+    if (!isAuthenticated()) throw redirect({ to: "/login" })
+  },
+})
+
+const dashboardReferralRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: "/dashboard/referral",
+  component: ReferralPage,
+  beforeLoad: () => {
+    if (!isAuthenticated()) throw redirect({ to: "/login" })
+  },
+})
+
+const dashboardNotificationsRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: "/dashboard/notifications",
+  component: NotificationsPage,
+  beforeLoad: () => {
+    if (!isAuthenticated()) throw redirect({ to: "/login" })
+  },
+})
+
 const accountRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: "/account",
@@ -256,7 +298,19 @@ const routeTree = rootRoute.addChildren([
     disclaimersRoute,
     notFoundRoute,
   ]),
-  appLayoutRoute.addChildren([loginRoute, registerRoute, dashboardRoute, accountRoute, billingRoute, gameRoute, adminRoute]),
+  appLayoutRoute.addChildren([
+    loginRoute,
+    registerRoute,
+    dashboardRoute,
+    dashboardSupportRoute,
+    dashboardActivityRoute,
+    dashboardReferralRoute,
+    dashboardNotificationsRoute,
+    accountRoute,
+    billingRoute,
+    gameRoute,
+    adminRoute,
+  ]),
 ])
 
 export const router = createRouter({ routeTree })

@@ -7,10 +7,12 @@ import type {
   Session,
   AdminUserRow,
   AdminSessionRow,
+  ActivitySession,
+  ActivityStats,
 } from "../../shared/types"
 import { DAILY_LIMIT_SECONDS } from "../../shared/settings"
 
-export type { GameRow, User, Subscription, Session, AdminUserRow, AdminSessionRow }
+export type { GameRow, User, Subscription, Session, AdminUserRow, AdminSessionRow, ActivitySession, ActivityStats }
 export { DAILY_LIMIT_SECONDS }
 
 // --- Users ---
@@ -300,4 +302,61 @@ export function logUsage(
     )
     .bind(crypto.randomUUID(), userId, sessionId ?? null, action)
     .run()
+}
+
+// --- Activity / Session History ---
+
+export async function getUserActivity(
+  db: D1Database,
+  userId: string
+): Promise<{ sessions: ActivitySession[]; stats: ActivityStats }> {
+  const result = await db
+    .prepare(
+      `SELECT
+         s.id,
+         s.game_id,
+         g.title   AS game_title,
+         g.genre   AS game_genre,
+         g.gradient AS game_gradient,
+         g.cover_art_url AS game_cover_art_url,
+         s.started_at,
+         s.ended_at,
+         CAST(
+           (JULIANDAY(COALESCE(s.ended_at, datetime('now'))) - JULIANDAY(s.started_at)) * 86400
+         AS INTEGER) AS duration_seconds
+       FROM sessions s
+       LEFT JOIN games g ON g.id = s.game_id
+       WHERE s.user_id = ?
+       ORDER BY s.started_at DESC
+       LIMIT 100`
+    )
+    .bind(userId)
+    .all<ActivitySession>()
+
+  const sessions = result.results
+
+  // Compute stats
+  const totalSessions = sessions.length
+  const totalSeconds = sessions.reduce((sum, s) => sum + s.duration_seconds, 0)
+  const gameSet = new Set(sessions.map((s) => s.game_title).filter(Boolean))
+  const uniqueGames = gameSet.size
+
+  const gameTime: Record<string, number> = {}
+  for (const s of sessions) {
+    if (s.game_title) {
+      gameTime[s.game_title] = (gameTime[s.game_title] ?? 0) + s.duration_seconds
+    }
+  }
+  const sorted = Object.entries(gameTime).sort(([, a], [, b]) => b - a)
+
+  return {
+    sessions,
+    stats: {
+      total_sessions: totalSessions,
+      total_seconds: totalSeconds,
+      unique_games: uniqueGames,
+      most_played_game: sorted[0]?.[0] ?? null,
+      most_played_seconds: sorted[0]?.[1] ?? 0,
+    },
+  }
 }

@@ -7,6 +7,7 @@ import type {
   PaidPlan,
   SessionStartResponse,
   SessionStatusResponse,
+  ActivityResponse,
 } from "@shared/types"
 
 class ApiError extends Error {
@@ -76,6 +77,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ plan }),
       }),
+  },
+
+  activity: {
+    list: () =>
+      request<ActivityResponse>("/api/activity"),
   },
 
   games: {

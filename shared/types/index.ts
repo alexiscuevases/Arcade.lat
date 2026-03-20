@@ -145,6 +145,33 @@ export type SessionStatus =
   | { type: "queued"; position: number; gameId: string }
   | { type: "idle" }
 
+// ─── Activity views ─────────────────────────────────────────────────────────
+
+export interface ActivitySession {
+  id: string
+  game_id: string | null
+  game_title: string | null
+  game_genre: string | null
+  game_gradient: string | null
+  game_cover_art_url: string | null
+  started_at: string
+  ended_at: string | null
+  duration_seconds: number
+}
+
+export interface ActivityStats {
+  total_sessions: number
+  total_seconds: number
+  unique_games: number
+  most_played_game: string | null
+  most_played_seconds: number
+}
+
+export interface ActivityResponse {
+  sessions: ActivitySession[]
+  stats: ActivityStats
+}
+
 // ─── API response types ─────────────────────────────────────────────────────
 
 export type SessionStartResponse =
