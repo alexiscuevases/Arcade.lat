@@ -9,7 +9,8 @@ import {
   createSession,
   logUsage,
 } from "../../lib/db"
-import { createInstance, destroyInstance } from "../../../workers/vast-service"
+import { createInstance, destroyInstance } from "../../../workers/gcp-gpu-service"
+import { getGCPConfig } from "../../lib/gcp"
 import { getStub, doFetch } from "../../lib/do"
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -30,14 +31,14 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   // Destroy the freed instance
   if (result.freedInstanceId) {
-    await destroyInstance(result.freedInstanceId).catch(console.error)
+    await destroyInstance(getGCPConfig(env), result.freedInstanceId).catch(console.error)
   }
 
   // Assign next queued user if any
   if (result.nextEntry) {
     const { userId: nextUserId, gameId: nextGameId } = result.nextEntry
     try {
-      const instance = await createInstance()
+      const instance = await createInstance(getGCPConfig(env))
 
       await doFetch(stub, "/confirm", { userId: nextUserId, gameId: nextGameId, instance })
 

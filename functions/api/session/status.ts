@@ -6,7 +6,8 @@ import { requireAuth } from "../../lib/auth"
 import { getActiveSession, getUserById, getDailyUsageSeconds, DAILY_LIMIT_SECONDS, endSession, logUsage, createSession } from "../../lib/db"
 import { getStub, doFetch } from "../../lib/do"
 import { DO_URL } from "../../../shared/settings"
-import { createInstance, destroyInstance } from "../../../workers/vast-service"
+import { createInstance, destroyInstance } from "../../../workers/gcp-gpu-service"
+import { getGCPConfig } from "../../lib/gcp"
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const auth = await requireAuth(request, env.JWT_SECRET)
@@ -54,12 +55,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       await logUsage(env.DB, auth.userId, "session_end_limit", dbSession.id)
 
       if (result.freedInstanceId) {
-        destroyInstance(result.freedInstanceId).catch(console.error)
+        destroyInstance(getGCPConfig(env), result.freedInstanceId).catch(console.error)
       }
 
       if (result.nextEntry) {
         const { userId: nextUserId, gameId: nextGameId } = result.nextEntry
-        createInstance().then(async (instance) => {
+        createInstance(getGCPConfig(env)).then(async (instance) => {
           await doFetch(stub, "/confirm", { userId: nextUserId, gameId: nextGameId, instance })
           const sessionId = crypto.randomUUID()
           await createSession(env.DB, {

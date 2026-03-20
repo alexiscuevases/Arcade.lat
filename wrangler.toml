@@ -22,7 +22,12 @@ STRIPE_PRICE_BASIC = "price_1TCSP8D4PsZljUybfUZtIKQU"
 STRIPE_PRICE_PRO = "price_1TCSPVD4PsZljUyb6Au2nqSH"
 APP_URL = "http://localhost:5173"
 
-# Secrets — set via: wrangler secret put <NAME>
+# Secrets — set via: wrangler pages secret put <NAME>
 # JWT_SECRET
 # STRIPE_SECRET_KEY
 # STRIPE_WEBHOOK_SECRET
+# GCP_SERVICE_ACCOUNT_KEY (base64-encoded JSON service account key)
+# GCP_PROJECT_ID
+# GCP_ZONE
+# GCP_INSTANCE_TAG
+# GCP_SUNSHINE_PORT

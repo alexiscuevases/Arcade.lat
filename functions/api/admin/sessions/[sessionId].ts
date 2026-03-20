@@ -3,7 +3,8 @@ import type { Env } from "../../../lib/env"
 import { json, error } from "../../../lib/response"
 import { requireAdmin } from "../../../lib/auth"
 import { getSessionById, endSession, logUsage } from "../../../lib/db"
-import { destroyInstance } from "../../../../workers/vast-service"
+import { destroyInstance } from "../../../../workers/gcp-gpu-service"
+import { getGCPConfig } from "../../../lib/gcp"
 import { getStub, doFetch } from "../../../lib/do"
 
 export const onRequestDelete: PagesFunction<Env> = async ({ request, env, params }) => {
@@ -26,7 +27,7 @@ export const onRequestDelete: PagesFunction<Env> = async ({ request, env, params
 
     // Destroy the GPU instance
     if (session.instance_id) {
-      await destroyInstance(session.instance_id).catch(console.error)
+      await destroyInstance(getGCPConfig(env), session.instance_id).catch(console.error)
     }
   }
 

@@ -4,7 +4,8 @@ import type { JoinResponse } from "../../../shared/types"
 import { json, error } from "../../lib/response"
 import { requireAuth } from "../../lib/auth"
 import { getUserById, createSession, logUsage, getDailyUsageSeconds, DAILY_LIMIT_SECONDS } from "../../lib/db"
-import { createInstance } from "../../../workers/vast-service"
+import { createInstance } from "../../../workers/gcp-gpu-service"
+import { getGCPConfig } from "../../lib/gcp"
 import { getStub, doFetch } from "../../lib/do"
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -56,7 +57,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   // type === "ready" — GPU slot reserved, create instance
   try {
-    const instance = await createInstance()
+    const instance = await createInstance(getGCPConfig(env))
 
     await doFetch(stub, "/confirm", { userId: user.id, gameId, instance })
 
@@ -80,6 +81,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   } catch (err) {
     // Release the reserved slot on failure
     await doFetch(stub, "/release", { userId: user.id })
+    console.log(err)
     return error("Failed to provision GPU instance", 503)
   }
 }
