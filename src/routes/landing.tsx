@@ -445,23 +445,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ─────────────────── FOOTER ─────────────────── */}
-      <footer className="border-t border-border/50 py-10 px-6">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Gamepad2 className="w-5 h-5 text-primary" />
-            <span className="font-bold text-foreground">Arcade</span>
-            <span className="text-muted-foreground text-sm ml-1">Cloud Gaming</span>
-          </div>
-          <nav className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link to="/login" className="hover:text-foreground transition-colors">Login</Link>
-            <Link to="/register" className="hover:text-foreground transition-colors">Registro</Link>
-            <Link to="/pricing" className="hover:text-foreground transition-colors">Precios</Link>
-          </nav>
-          <p className="text-xs text-muted-foreground">© 2025 Arcade. Todos los derechos reservados.</p>
-        </div>
-      </footer>
-
       {/* ─────────────────── KEYFRAMES ─────────────────── */}
       <style>{`
         @keyframes float1 {

@@ -261,7 +261,7 @@ export function PricingPage() {
       </section>
 
       {/* ─── PLAN CARDS ─── */}
-      <section className="pb-20 px-6">
+      <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto grid gap-6 md:grid-cols-3">
           {plans.map((plan) => {
             const price = yearly ? plan.yearlyPrice : plan.monthlyPrice
@@ -270,7 +270,7 @@ export function PricingPage() {
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-xl border overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 ${
+                className={`relative rounded-xl border flex flex-col transition-all duration-300 hover:-translate-y-1 ${
                   plan.highlight
                     ? "border-primary/40 bg-primary/4 shadow-[0_0_50px_oklch(0.76_0.19_196/12%)]"
                     : "border-border/60 bg-card"
@@ -477,23 +477,6 @@ export function PricingPage() {
           </div>
         </div>
       </section>
-
-      {/* ─── FOOTER ─── */}
-      <footer className="border-t border-border/50 py-10 px-6">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Gamepad2 className="size-5 text-primary" />
-            <span className="font-bold text-foreground">Arcade</span>
-            <span className="text-muted-foreground text-sm ml-1">Cloud Gaming</span>
-          </div>
-          <nav className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link to="/login" className="hover:text-foreground transition-colors">Login</Link>
-            <Link to="/register" className="hover:text-foreground transition-colors">Registro</Link>
-            <Link to="/pricing" className="hover:text-foreground transition-colors">Precios</Link>
-          </nav>
-          <p className="text-xs text-muted-foreground">© 2025 Arcade. Todos los derechos reservados.</p>
-        </div>
-      </footer>
     </div>
   )
 }

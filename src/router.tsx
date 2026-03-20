@@ -8,6 +8,7 @@ import {
 import { Toaster } from "sonner"
 import { isAuthenticated, getUser } from "./lib/auth"
 import { Navbar } from "./components/layout/navbar"
+import { Footer } from "./components/layout/footer"
 import { LoginPage } from "./routes/login"
 import { RegisterPage } from "./routes/register"
 import { PricingPage } from "./routes/pricing"
@@ -17,24 +18,55 @@ import { AccountPage } from "./routes/account"
 import { BillingPage } from "./routes/billing"
 import { GamePage } from "./routes/game"
 import { AdminPage } from "./routes/admin"
+import { TermsPage } from "./routes/terms"
+import { PrivacyPage } from "./routes/privacy"
 
-// Root layout
+// Root shell (shared by all routes — only holds Toaster)
 function RootLayout() {
   return (
-    <div className="min-h-svh bg-background text-foreground">
+    <>
+      <Outlet />
+      <Toaster richColors position="top-right" />
+    </>
+  )
+}
+
+// Public layout — navbar + full footer (landing, pricing, terms, privacy)
+function PublicLayout() {
+  return (
+    <div className="min-h-svh bg-background text-foreground flex flex-col">
       <Navbar />
-      <main>
+      <main className="flex-1">
         <Outlet />
       </main>
-      <Toaster richColors position="top-right" />
+      <Footer />
+    </div>
+  )
+}
+
+// App layout — navbar only, no footer (auth, dashboard, admin, game)
+function AppLayout() {
+  return (
+    <div className="min-h-svh bg-background text-foreground flex flex-col">
+      <Navbar />
+      <main className="flex-1">
+        <Outlet />
+      </main>
     </div>
   )
 }
 
 const rootRoute = createRootRoute({ component: RootLayout })
 
-const indexRoute = createRoute({
+// ── Public layout routes ────────────────────────────────────────────────────
+const publicLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
+  id: "public",
+  component: PublicLayout,
+})
+
+const indexRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
   path: "/",
   component: LandingPage,
   beforeLoad: () => {
@@ -42,8 +74,33 @@ const indexRoute = createRoute({
   },
 })
 
-const loginRoute = createRoute({
+const pricingRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/pricing",
+  component: PricingPage,
+})
+
+const termsRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/terms",
+  component: TermsPage,
+})
+
+const privacyRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/privacy",
+  component: PrivacyPage,
+})
+
+// ── App layout routes (no footer) ───────────────────────────────────────────
+const appLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
+  id: "app",
+  component: AppLayout,
+})
+
+const loginRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
   path: "/login",
   component: LoginPage,
   beforeLoad: () => {
@@ -52,7 +109,7 @@ const loginRoute = createRoute({
 })
 
 const registerRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => appLayoutRoute,
   path: "/register",
   component: RegisterPage,
   beforeLoad: () => {
@@ -60,14 +117,8 @@ const registerRoute = createRoute({
   },
 })
 
-const pricingRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/pricing",
-  component: PricingPage,
-})
-
 const dashboardRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => appLayoutRoute,
   path: "/dashboard",
   component: DashboardPage,
   beforeLoad: () => {
@@ -76,7 +127,7 @@ const dashboardRoute = createRoute({
 })
 
 const accountRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => appLayoutRoute,
   path: "/account",
   component: AccountPage,
   beforeLoad: () => {
@@ -85,7 +136,7 @@ const accountRoute = createRoute({
 })
 
 const billingRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => appLayoutRoute,
   path: "/billing",
   component: BillingPage,
   beforeLoad: () => {
@@ -94,7 +145,7 @@ const billingRoute = createRoute({
 })
 
 const gameRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => appLayoutRoute,
   path: "/game/$gameId",
   component: function GameRouteComponent() {
     const { gameId } = gameRoute.useParams()
@@ -106,7 +157,7 @@ const gameRoute = createRoute({
 })
 
 const adminRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => appLayoutRoute,
   path: "/admin",
   component: AdminPage,
   beforeLoad: () => {
@@ -116,15 +167,8 @@ const adminRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
-  indexRoute,
-  loginRoute,
-  registerRoute,
-  pricingRoute,
-  dashboardRoute,
-  accountRoute,
-  billingRoute,
-  gameRoute,
-  adminRoute,
+  publicLayoutRoute.addChildren([indexRoute, pricingRoute, termsRoute, privacyRoute]),
+  appLayoutRoute.addChildren([loginRoute, registerRoute, dashboardRoute, accountRoute, billingRoute, gameRoute, adminRoute]),
 ])
 
 export const router = createRouter({ routeTree })
