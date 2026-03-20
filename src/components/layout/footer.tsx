@@ -3,16 +3,21 @@ import { Gamepad2, Github, Twitter } from "lucide-react"
 
 const links = {
   product: [
-    { label: "Juegos", to: "/" },
+    { label: "Características", to: "/features" },
     { label: "Precios", to: "/pricing" },
   ],
   legal: [
     { label: "Términos", to: "/terms" },
     { label: "Privacidad", to: "/privacy" },
+    { label: "Cookies", to: "/cookies" },
+    { label: "Reembolso", to: "/refund" },
+    { label: "Disclaimers", to: "/disclaimers" },
   ],
-  account: [
-    { label: "Iniciar sesión", to: "/login" },
-    { label: "Registro", to: "/register" },
+  resources: [
+    { label: "Blog", to: "/blog" },
+    { label: "FAQ", to: "/faq" },
+    { label: "Soporte", to: "/support" },
+    { label: "Acerca de", to: "/about" },
   ],
 }
 
@@ -71,11 +76,11 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Account */}
+          {/* Resources */}
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Cuenta</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Recursos</p>
             <ul className="space-y-2">
-              {links.account.map((l) => (
+              {links.resources.map((l) => (
                 <li key={l.to}>
                   <Link
                     to={l.to}

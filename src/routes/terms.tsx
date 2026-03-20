@@ -143,7 +143,7 @@ export function TermsPage() {
 
   return (
     <div className="overflow-x-hidden">
-      <ScrollProgress />
+      
 
       {/* ─── HERO ─── */}
       <section

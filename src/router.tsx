@@ -20,6 +20,16 @@ import { GamePage } from "./routes/game"
 import { AdminPage } from "./routes/admin"
 import { TermsPage } from "./routes/terms"
 import { PrivacyPage } from "./routes/privacy"
+import { AboutPage } from "./routes/about"
+import { FaqPage } from "./routes/faq"
+import { SupportPage } from "./routes/support"
+import { BlogPage } from "./routes/blog"
+import { NotFoundPage } from "./routes/not-found"
+import { CookiesPage } from "./routes/cookies"
+import { RefundPage } from "./routes/refund"
+import { DisclaimersPage } from "./routes/disclaimers"
+import { FeaturesPage } from "./routes/features"
+import { BlogPostPage } from "./routes/blog-post"
 
 // Root shell (shared by all routes — only holds Toaster)
 function RootLayout() {
@@ -90,6 +100,69 @@ const privacyRoute = createRoute({
   getParentRoute: () => publicLayoutRoute,
   path: "/privacy",
   component: PrivacyPage,
+})
+
+const aboutRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/about",
+  component: AboutPage,
+})
+
+const faqRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/faq",
+  component: FaqPage,
+})
+
+const supportRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/support",
+  component: SupportPage,
+})
+
+const blogRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/blog",
+  component: BlogPage,
+})
+
+const blogPostRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/blog/$slug",
+  component: function BlogPostRouteComponent() {
+    const { slug } = blogPostRoute.useParams()
+    return <BlogPostPage slug={slug} />
+  },
+})
+
+const cookiesRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/cookies",
+  component: CookiesPage,
+})
+
+const refundRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/refund",
+  component: RefundPage,
+})
+
+const disclaimersRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/disclaimers",
+  component: DisclaimersPage,
+})
+
+const featuresRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "/features",
+  component: FeaturesPage,
+})
+
+const notFoundRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: "*",
+  component: NotFoundPage,
 })
 
 // ── App layout routes (no footer) ───────────────────────────────────────────
@@ -167,7 +240,22 @@ const adminRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
-  publicLayoutRoute.addChildren([indexRoute, pricingRoute, termsRoute, privacyRoute]),
+  publicLayoutRoute.addChildren([
+    indexRoute,
+    pricingRoute,
+    termsRoute,
+    privacyRoute,
+    aboutRoute,
+    faqRoute,
+    supportRoute,
+    blogRoute,
+    blogPostRoute,
+    featuresRoute,
+    cookiesRoute,
+    refundRoute,
+    disclaimersRoute,
+    notFoundRoute,
+  ]),
   appLayoutRoute.addChildren([loginRoute, registerRoute, dashboardRoute, accountRoute, billingRoute, gameRoute, adminRoute]),
 ])
 
