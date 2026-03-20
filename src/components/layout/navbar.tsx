@@ -39,7 +39,7 @@ export function Navbar() {
           <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 border border-primary/30 group-hover:bg-primary/20 group-hover:border-primary/50 transition-colors">
             <Gamepad2 className="size-4 text-primary" />
           </div>
-          <span className="text-foreground group-hover:text-primary transition-colors">
+          <span className="text-foreground group-hover:text-primary font-nasalization transition-colors">
             Arcade
           </span>
         </Link>

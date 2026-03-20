@@ -33,7 +33,7 @@ export function Footer() {
               <div className="flex size-7 items-center justify-center rounded-md bg-primary/15 border border-primary/25">
                 <Gamepad2 className="size-4 text-primary" />
               </div>
-              <span className="font-bold text-foreground tracking-tight">Arcade</span>
+              <span className="font-bold text-foreground font-nasalization tracking-tight">Arcade</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-[180px]">
               Cloud gaming sin descargas. Juega AAA desde cualquier dispositivo.
