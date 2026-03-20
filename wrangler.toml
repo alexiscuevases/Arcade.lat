@@ -8,6 +8,10 @@ binding = "DB"
 database_name = "arcade-db"
 database_id = "cbf4b18e-cce4-4551-90e3-cfe712618a57"
 
+[[r2_buckets]]
+binding = "GAME_COVERS"
+bucket_name = "arcade-game-covers"
+
 [[durable_objects.bindings]]
 name = "QUEUE_MANAGER"
 class_name = "QueueManager"

@@ -1,6 +1,7 @@
 export interface Env {
   DB: D1Database
   QUEUE_MANAGER: DurableObjectNamespace
+  GAME_COVERS: R2Bucket
   JWT_SECRET: string
   STRIPE_SECRET_KEY: string
   STRIPE_WEBHOOK_SECRET: string

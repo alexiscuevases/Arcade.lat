@@ -1,11 +1,12 @@
 import type { PagesFunction } from "@cloudflare/workers-types"
 import type { Env } from "../../lib/env"
-import type { SessionStatus } from "../../../shared/types"
+import type { SessionStatus, ReleaseResponse } from "../../../shared/types"
 import { json } from "../../lib/response"
 import { requireAuth } from "../../lib/auth"
-import { getActiveSession, getUserById, getDailyUsageSeconds, DAILY_LIMIT_SECONDS } from "../../lib/db"
-import { getStub } from "../../lib/do"
+import { getActiveSession, getUserById, getDailyUsageSeconds, DAILY_LIMIT_SECONDS, endSession, logUsage, createSession } from "../../lib/db"
+import { getStub, doFetch } from "../../lib/do"
 import { DO_URL } from "../../../shared/settings"
+import { createInstance, destroyInstance } from "../../../workers/vast-service"
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const auth = await requireAuth(request, env.JWT_SECRET)
@@ -45,6 +46,40 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       }).catch(() => {})
       return json({ status: "idle", ...dailyInfo })
     }
+
+    // Auto-terminate session if daily limit has been reached
+    if (limitSeconds !== null && usedSeconds >= limitSeconds) {
+      const result = await doFetch(stub, "/release", { userId: auth.userId }) as ReleaseResponse
+      await endSession(env.DB, dbSession.id)
+      await logUsage(env.DB, auth.userId, "session_end_limit", dbSession.id)
+
+      if (result.freedInstanceId) {
+        destroyInstance(result.freedInstanceId).catch(console.error)
+      }
+
+      if (result.nextEntry) {
+        const { userId: nextUserId, gameId: nextGameId } = result.nextEntry
+        createInstance().then(async (instance) => {
+          await doFetch(stub, "/confirm", { userId: nextUserId, gameId: nextGameId, instance })
+          const sessionId = crypto.randomUUID()
+          await createSession(env.DB, {
+            id: sessionId,
+            user_id: nextUserId,
+            game_id: nextGameId,
+            instance_id: instance.id,
+            instance_ip: instance.ip,
+            instance_port: instance.port,
+            instance_token: instance.token,
+          })
+          await logUsage(env.DB, nextUserId, "session_start_from_queue", sessionId)
+        }).catch(async () => {
+          await doFetch(stub, "/release", { userId: result.nextEntry!.userId }).catch(console.error)
+        })
+      }
+
+      return json({ status: "limit_reached", ...dailyInfo })
+    }
+
     return json({
       status: "active",
       gameId: status.session.gameId,

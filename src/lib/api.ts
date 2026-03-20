@@ -108,7 +108,19 @@ export const api = {
     games: () =>
       request<{ games: GameRow[] }>("/api/admin/games"),
 
-    updateGame: (id: string, patch: { enabled?: number; title?: string; genre?: string }) =>
+    updateGame: (
+      id: string,
+      patch: {
+        enabled?: number
+        title?: string
+        genre?: string
+        players?: string
+        gradient?: string
+        developer?: string
+        description?: string
+        cover_art_url?: string | null
+      }
+    ) =>
       request<{ success: boolean }>(`/api/admin/games/${id}`, {
         method: "PATCH",
         body: JSON.stringify(patch),
@@ -119,6 +131,20 @@ export const api = {
 
     seedGames: () =>
       request<{ seeded: number }>("/api/admin/games/seed", { method: "POST" }),
+
+    uploadGameCover: (id: string, file: File) => {
+      const formData = new FormData()
+      formData.append("cover", file)
+      const token = getToken()
+      return fetch(`/api/admin/games/${id}/upload-cover`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      }).then((res) => {
+        if (!res.ok) throw new Error("Upload failed")
+        return res.json() as Promise<{ success: boolean; url: string }>
+      })
+    },
   },
 }
 

@@ -15,6 +15,7 @@ export interface GameRow {
   developer: string
   description: string
   enabled: number // 1 = enabled, 0 = disabled
+  cover_art_url: string | null
   created_at: string
 }
 
@@ -80,6 +81,8 @@ export interface AdminSessionRow {
   id: string
   user_id: string
   user_email: string
+  game_id: string | null
+  game_title: string | null
   instance_ip: string | null
   instance_port: number | null
   started_at: string
@@ -155,4 +158,5 @@ export type SessionStatusResponse =
     | { status: "queued"; gameId: string; position: number }
     | { status: "pending"; gameId: string }
     | { status: "idle" }
+    | { status: "limit_reached" }
   )

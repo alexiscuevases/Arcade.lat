@@ -58,9 +58,11 @@ export async function getAllActiveSessions(db: D1Database): Promise<AdminSession
   const result = await db
     .prepare(
       `SELECT s.id, s.user_id, u.email AS user_email,
+              s.game_id, g.title AS game_title,
               s.instance_ip, s.instance_port, s.started_at
        FROM sessions s
        JOIN users u ON u.id = s.user_id
+       LEFT JOIN games g ON g.id = s.game_id
        WHERE s.ended_at IS NULL
        ORDER BY s.started_at DESC`
     )
@@ -217,12 +219,12 @@ export function getGameById(db: D1Database, id: string) {
 
 export function upsertGame(
   db: D1Database,
-  game: Omit<GameRow, "enabled" | "created_at"> & { enabled?: number }
+  game: Omit<GameRow, "enabled" | "cover_art_url" | "created_at"> & { enabled?: number; cover_art_url?: string | null }
 ) {
   return db
     .prepare(
-      `INSERT INTO games (id, title, genre, players, gradient, developer, description, enabled)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO games (id, title, genre, players, gradient, developer, description, enabled, cover_art_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          title = excluded.title,
          genre = excluded.genre,
@@ -239,7 +241,8 @@ export function upsertGame(
       game.gradient,
       game.developer,
       game.description,
-      game.enabled ?? 1
+      game.enabled ?? 1,
+      game.cover_art_url ?? null
     )
     .run()
 }
@@ -247,7 +250,7 @@ export function upsertGame(
 export function updateGame(
   db: D1Database,
   id: string,
-  patch: Partial<Pick<GameRow, "title" | "genre" | "players" | "gradient" | "developer" | "description" | "enabled">>
+  patch: Partial<Pick<GameRow, "title" | "genre" | "players" | "gradient" | "developer" | "description" | "enabled" | "cover_art_url">>
 ) {
   const fields = Object.keys(patch) as (keyof typeof patch)[]
   const setClauses = fields.map((f) => `${f} = ?`).join(", ")

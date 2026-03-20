@@ -49,8 +49,12 @@ CREATE TABLE IF NOT EXISTS games (
   developer TEXT NOT NULL,
   description TEXT NOT NULL,
   enabled INTEGER NOT NULL DEFAULT 1,
+  cover_art_url TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Migration for existing databases: run once if upgrading
+-- wrangler d1 execute arcade-db --remote --command="ALTER TABLE games ADD COLUMN cover_art_url TEXT"
 
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_active ON sessions(user_id, ended_at) WHERE ended_at IS NULL;
