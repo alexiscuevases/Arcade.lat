@@ -35,6 +35,7 @@ import { DisclaimersPage } from "./features/legal/disclaimers"
 import { FeaturesPage } from "./features/marketing/features"
 import { BlogPostPage } from "./features/marketing/blog-post"
 import { ChatWidget } from "./shared/components/chat-widget"
+import { WebRTCTestPage } from "./features/dev/webrtc-test"
 
 // Root shell (shared by all routes — only holds Toaster)
 function RootLayout() {
@@ -165,6 +166,12 @@ const featuresRoute = createRoute({
   component: FeaturesPage,
 })
 
+const webrtcTestRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/dev/webrtc",
+  component: WebRTCTestPage,
+})
+
 const notFoundRoute = createRoute({
   getParentRoute: () => publicLayoutRoute,
   path: "*",
@@ -282,6 +289,7 @@ const adminRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
+  webrtcTestRoute,
   publicLayoutRoute.addChildren([
     indexRoute,
     pricingRoute,
