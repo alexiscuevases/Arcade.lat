@@ -8,10 +8,11 @@ export interface Env {
   STRIPE_PRICE_BASIC: string
   STRIPE_PRICE_PRO: string
   APP_URL: string
-  // GCP — VMs pre-creadas desde el dashboard, aquí solo start/stop
-  GCP_PROJECT_ID: string
-  GCP_ZONE: string
-  GCP_SERVICE_ACCOUNT_KEY: string // base64-encoded JSON key de service account
-  GCP_INSTANCE_TAG: string        // tag de las VMs en GCP (e.g. "arcade-vm")
-  GCP_SUNSHINE_PORT: string       // puerto de Sunshine en las VMs (e.g. "47989")
+  // Vast.ai — GPU instances on-demand
+  VAST_API_KEY: string
+  VAST_GPU_NAME: string          // e.g. "RTX_4090"
+  VAST_IMAGE: string             // Docker image URI for the VM
+  VAST_DISK_GB: string           // disk space in GB (e.g. "20")
+  VAST_SUNSHINE_PORT: string     // internal Sunshine port (e.g. "47989")
+  VAST_ONSTART: string           // shell commands to run on startup
 }
