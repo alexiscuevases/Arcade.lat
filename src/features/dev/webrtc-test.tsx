@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import {
@@ -7,8 +7,6 @@ import {
   Play,
   Square,
   Maximize2,
-  Volume2,
-  VolumeX,
   RotateCcw,
   Wifi,
   WifiOff,
@@ -30,10 +28,10 @@ interface LogEntry {
 
 export function WebRTCTestPage() {
   // Connection params
-  const [ip, setIp] = useState("localhost")
-  const [port, setPort] = useState("8080")
+  const [host, setHost] = useState("rtc.arcade.lat")
+  const [path, setPath] = useState("/webrtc/signalling/")
   const [token, setToken] = useState("")
-  const [protocol, setProtocol] = useState<"ws" | "wss">("ws")
+  const [protocol, setProtocol] = useState<"ws" | "wss">("wss")
 
   // Logs
   const [logs, setLogs] = useState<LogEntry[]>([])
@@ -49,8 +47,8 @@ export function WebRTCTestPage() {
     setLogs((prev) => [...prev.slice(-200), { time, level, message }])
   }, [])
 
-  // Build signaling URL from form params (token appended as query param)
-  const signalingUrl = `${protocol}://${ip}:${port}/api/host/stream${token ? `?token=${token}` : ""}`
+  // Build WSS URL from form params
+  const signalingUrl = `${protocol}://${host}${path}${token ? `?token=${token}` : ""}`
 
   // ─── WebRTC stream hook ─────────────────────────────────────────────────
 
@@ -59,10 +57,9 @@ export function WebRTCTestPage() {
     videoRef,
     containerRef,
     inputChannelRef,
-    muted,
-    setMuted,
     connect,
     disconnect,
+    reconnect,
     toggleFullscreen,
   } = useWebRTCStream({
     signalingUrl,
@@ -73,12 +70,6 @@ export function WebRTCTestPage() {
   // ─── Input forwarding ───────────────────────────────────────────────────
 
   useInputForwarding(containerRef, inputChannelRef)
-
-  // ─── Connect wrapper ────────────────────────────────────────────────────
-
-  const handleConnect = useCallback(() => {
-    connect()
-  }, [connect])
 
   // ─── UI helpers ─────────────────────────────────────────────────────────
 
@@ -100,7 +91,7 @@ export function WebRTCTestPage() {
               WebRTC Test
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Conecta directamente a una instancia con signaling WebSocket
+              Conecta directamente a una instancia con WebSocket
             </p>
           </div>
           <Badge className={`${stateColor[streamState]} text-white border-0`}>
@@ -124,24 +115,24 @@ export function WebRTCTestPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">IP de la instancia</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">Host</label>
                   <input
                     type="text"
-                    placeholder="34.123.45.67"
-                    value={ip}
-                    onChange={(e) => setIp(e.target.value)}
+                    placeholder="rtc.arcade.lat"
+                    value={host}
+                    onChange={(e) => setHost(e.target.value)}
                     disabled={streamState !== "idle"}
                     className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Puerto</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Path</label>
                     <input
                       type="text"
-                      placeholder="47989"
-                      value={port}
-                      onChange={(e) => setPort(e.target.value)}
+                      placeholder="/webrtc/signalling/"
+                      value={path}
+                      onChange={(e) => setPath(e.target.value)}
                       disabled={streamState !== "idle"}
                       className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
                     />
@@ -175,8 +166,8 @@ export function WebRTCTestPage() {
                   {streamState === "idle" ? (
                     <Button
                       className="flex-1 gap-1.5"
-                      onClick={handleConnect}
-                      disabled={!ip}
+                      onClick={connect}
+                      disabled={!host}
                     >
                       <Play className="size-3.5 fill-current" />
                       Conectar
@@ -191,32 +182,30 @@ export function WebRTCTestPage() {
                         <Square className="size-3.5 fill-current" />
                         Desconectar
                       </Button>
-                      {streamState === "error" && (
-                        <Button variant="outline" size="icon" onClick={handleConnect}>
-                          <RotateCcw className="size-4" />
-                        </Button>
-                      )}
+                      <Button variant="outline" size="icon" onClick={reconnect} title="Reconectar">
+                        <RotateCcw className="size-4" />
+                      </Button>
                     </>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Signaling URL preview */}
+            {/* WSS URL preview */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs text-muted-foreground">URL de signaling</CardTitle>
+                <CardTitle className="text-xs text-muted-foreground">URL de conexion</CardTitle>
               </CardHeader>
               <CardContent>
                 <code className="text-xs break-all text-primary/80">
-                  {protocol}://{ip || "IP"}:{port}/api/host/stream{token ? `?token=${token.slice(0, 8)}…` : ""}
+                  {protocol}://{host || "host"}{path}{token ? `?token=${token.slice(0, 8)}…` : ""}
                 </code>
               </CardContent>
             </Card>
 
             {/* Logs */}
-            <Card className="max-h-[400px] flex flex-col">
-              <CardHeader className="pb-2 flex-shrink-0">
+            <Card className="max-h-100 flex flex-col">
+              <CardHeader className="pb-2 shrink-0">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Terminal className="size-4" />
@@ -277,7 +266,6 @@ export function WebRTCTestPage() {
                     ref={videoRef}
                     autoPlay
                     playsInline
-                    muted={muted}
                     className="w-full h-full object-contain"
                   />
 
@@ -295,10 +283,7 @@ export function WebRTCTestPage() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center text-white/60">
                         <Monitor className="size-12 mx-auto mb-3 animate-pulse" />
-                        <p className="text-sm">Conectando al stream…</p>
-                        <p className="text-xs text-white/30 mt-1">
-                          Negociando WebRTC con {ip}:{port}
-                        </p>
+                        <p className="text-sm">Conectando…</p>
                       </div>
                     </div>
                   )}
@@ -317,7 +302,7 @@ export function WebRTCTestPage() {
 
                   {/* Status indicator */}
                   {streamState !== "idle" && (
-                    <div className="absolute top-3 left-3">
+                    <div className="absolute top-3 left-3 flex items-center gap-2">
                       <Badge className={`${stateColor[streamState]} text-white border-0 text-xs`}>
                         {streamState}
                       </Badge>
@@ -332,52 +317,26 @@ export function WebRTCTestPage() {
                       variant="ghost"
                       size="icon"
                       className="size-8"
-                      onClick={() => setMuted(!muted)}
-                    >
-                      {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
                       onClick={toggleFullscreen}
+                      title="Pantalla completa (Ctrl+Shift+F)"
                     >
                       <Maximize2 className="size-4" />
                     </Button>
+                    {streamState !== "idle" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        onClick={reconnect}
+                        title="Reconectar"
+                      >
+                        <RotateCcw className="size-3.5" />
+                      </Button>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Haz click en el video y usa teclado/mouse para enviar input
                   </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Info card */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Protocolo Sunshine/Moonlight</CardTitle>
-                <CardDescription className="text-xs">
-                  El servidor inicia la negociacion — el cliente solo responde con answers.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
-                  <div className="rounded-lg bg-muted/50 p-3 space-y-1">
-                    <p className="text-primary font-semibold">Servidor → Cliente</p>
-                    <p className="text-muted-foreground">{'{ DebugLog: { message } }'}</p>
-                    <p className="text-muted-foreground">{'{ WebRtc: { Description: { ty: "offer", sdp } } }'}</p>
-                    <p className="text-muted-foreground">{'{ ConnectionComplete: { width, height, fps } }'}</p>
-                  </div>
-                  <div className="rounded-lg bg-muted/50 p-3 space-y-1">
-                    <p className="text-primary font-semibold">Cliente → Servidor</p>
-                    <p className="text-muted-foreground">{'{ WebRtc: { Description: { ty: "answer", sdp } } }'}</p>
-                    <p className="text-muted-foreground">{'{ WebRtc: { Candidate: { ... } } }'}</p>
-                  </div>
-                  <div className="rounded-lg bg-muted/50 p-3 space-y-1">
-                    <p className="text-primary font-semibold">Input (DataChannel)</p>
-                    <p className="text-muted-foreground">{'{ type: "keydown", code }'}</p>
-                    <p className="text-muted-foreground">{'{ type: "mousemove", x, y }'}</p>
-                  </div>
                 </div>
               </CardContent>
             </Card>

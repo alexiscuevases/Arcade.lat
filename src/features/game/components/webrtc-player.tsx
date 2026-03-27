@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react"
-import { Monitor, Maximize2, Volume2, VolumeX, RotateCcw } from "lucide-react"
+import { Monitor, Maximize2, RotateCcw } from "lucide-react"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
@@ -15,11 +15,6 @@ interface WebRTCPlayerProps {
   onEnd: () => void
   isEnding: boolean
 }
-
-// ─── Constants ──────────────────────────────────────────────────────────────
-
-const MAX_RETRIES = 3
-const RETRY_DELAY_MS = 2000
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -48,10 +43,10 @@ export function WebRTCPlayer({
     return `${m}:${s.toString().padStart(2, "0")}`
   }
 
-  // Build signaling URL with token auth
+  // Build WSS URL with token auth
   const signalingUrl = useMemo(() => {
     const protocol = location.protocol === "https:" ? "wss" : "ws"
-    return `${protocol}://${connection.ip}:${connection.port}/api/host/stream?token=${connection.token}`
+    return `${protocol}://${connection.ip}:${connection.port}/ws?token=${connection.token}`
   }, [connection.ip, connection.port, connection.token])
 
   // ─── WebRTC stream hook ─────────────────────────────────────────────────
@@ -61,26 +56,16 @@ export function WebRTCPlayer({
     videoRef,
     containerRef,
     inputChannelRef,
-    muted,
-    setMuted,
-    connect,
+    reconnect,
     toggleFullscreen,
   } = useWebRTCStream({
     signalingUrl,
     autoConnect: true,
-    maxRetries: MAX_RETRIES,
-    retryDelayMs: RETRY_DELAY_MS,
   })
 
   // ─── Input forwarding ───────────────────────────────────────────────────
 
   useInputForwarding(containerRef, inputChannelRef)
-
-  // ─── Retry handler (resets internal counter via fresh connect) ───────────
-
-  function handleRetry() {
-    connect()
-  }
 
   return (
     <Card className="border-green-500/30 bg-green-500/5 overflow-hidden">
@@ -95,7 +80,6 @@ export function WebRTCPlayer({
             ref={videoRef}
             autoPlay
             playsInline
-            muted={muted}
             className="w-full h-full object-contain"
           />
 
@@ -103,10 +87,7 @@ export function WebRTCPlayer({
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-white/70">
                 <Monitor className="size-10 mx-auto mb-3 animate-pulse" />
-                <p className="text-sm">Conectando al stream…</p>
-                <p className="text-xs text-white/40 mt-1">
-                  Estableciendo conexión WebRTC
-                </p>
+                <p className="text-sm">Conectando…</p>
               </div>
             </div>
           )}
@@ -125,7 +106,7 @@ export function WebRTCPlayer({
                   variant="outline"
                   size="sm"
                   className="mt-3 gap-1.5"
-                  onClick={handleRetry}
+                  onClick={reconnect}
                 >
                   <RotateCcw className="size-3" />
                   Reintentar
@@ -154,22 +135,22 @@ export function WebRTCPlayer({
               variant="ghost"
               size="icon"
               className="size-8"
-              onClick={() => setMuted(!muted)}
-            >
-              {muted ? (
-                <VolumeX className="size-4" />
-              ) : (
-                <Volume2 className="size-4" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
               onClick={toggleFullscreen}
+              title="Pantalla completa (Ctrl+Shift+F)"
             >
               <Maximize2 className="size-4" />
             </Button>
+            {streamState === "streaming" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                onClick={reconnect}
+                title="Reconectar"
+              >
+                <RotateCcw className="size-3.5" />
+              </Button>
+            )}
           </div>
 
           <Button
